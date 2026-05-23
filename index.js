@@ -24,7 +24,9 @@ module.exports = (secret, {
             bodySize += chunk.length
 
             if (bodySize > limit) {
-                return res.status(413).send("Payload Too Large")
+                res.status(413).send("Payload Too Large")
+                req.destroy() //destroy stream to stop receiving more data
+                return
             }
 
             chunks.push(chunk)
@@ -37,13 +39,14 @@ module.exports = (secret, {
 
             try {
                 req.body = JSON.parse(req.rawBody)
-            } catch (_) {
+            } catch (err) {
+                console.error("Error parsing JSON payload:", err)
                 return res.status(400).send("Invalid JSON payload")
             }
 
             try {
                 //get signature
-                const signatureHeader = req.headers[header]
+                const signatureHeader = req.header(header)
                 if (!signatureHeader) return res.status(400).send("Missing signature header")
 
                 //create hmac
@@ -58,6 +61,7 @@ module.exports = (secret, {
 
                 next()
             } catch (err) {
+                console.error("Error during signature verification:", err)
                 res.status(500).send("Error during signature verification")
             }
         })

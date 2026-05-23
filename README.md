@@ -3,7 +3,7 @@
 
 A really simple and lightweight hmac webhook verifier for express.
 
-It will only let webhook requests pass that have a valid signature, meaning that faking purchase webhooks is not possible (provided that you do not leak your secret). The body will then be available as a JSON object in `req.body`.
+It will only let webhook requests pass that have a valid signature, meaning that faking purchase webhooks is not possible (provided that you do not leak your secret). The payload will then be available as a JSON object in `req.body`.
 
 ## Features
 - Zero production dependencies.
@@ -20,7 +20,7 @@ npm i hmacverify
 ```js
 const hmacverify = require("hmacverify")
 
-app.use("/your/webhook/endpoint", hmacverify("secret"))
+app.use("/your/webhook/endpoint", hmacverify("secret", { /* options */ }))
 ```
 
 ## Options
