@@ -1,5 +1,6 @@
 # hmacverify
 > Originally named shoppyhook, made only for shoppy.gg, recoded for general use.
+
 A really simple and lightweight hmac webhook verifier for express.
 
 It will only let webhook requests pass that have a valid signature, meaning that faking purchase webhooks is not possible (provided that you do not leak your secret). The body will then be available as a JSON object in `req.body`.
