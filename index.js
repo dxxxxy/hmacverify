@@ -1,6 +1,6 @@
 const crypto = require("crypto")
 
-module.exports = (secret, {
+export default (secret, {
     header = "x-shoppy-signature", //header name where the signature is expected
     algorithm = "sha512", //HMAC algorithm to use
     encoding = "hex", //encoding of the signature
@@ -14,7 +14,7 @@ module.exports = (secret, {
 
     return (req, res, next) => {
         if (req.complete) {
-            return res.status(500).send("Stream already consumed. Ensure hmacverify is used before other body parsers.")
+            return res.status(500).json({ message: "Stream already consumed. Ensure hmacverify is used before other body parsers." })
         }
 
         const chunks = []
@@ -24,7 +24,7 @@ module.exports = (secret, {
             bodySize += chunk.length
 
             if (bodySize > limit) {
-                res.status(413).send("Payload Too Large")
+                res.status(413).json({ message: "Payload too large" })
                 req.destroy() //destroy stream to stop receiving more data
                 return
             }
@@ -41,13 +41,13 @@ module.exports = (secret, {
                 req.body = JSON.parse(req.rawBody)
             } catch (err) {
                 console.error("Error parsing JSON payload:", err)
-                return res.status(400).send("Invalid JSON payload")
+                return res.status(400).json({ message: "Invalid JSON payload" })
             }
 
             try {
                 //get signature
                 const signatureHeader = req.header(header)
-                if (!signatureHeader) return res.status(400).send("Missing signature header")
+                if (!signatureHeader) return res.status(400).json({ message: "Missing signature header" })
 
                 //create hmac
                 const hmac = crypto.createHmac(algorithm, secret)
@@ -56,13 +56,13 @@ module.exports = (secret, {
                 const expectedSignature = Buffer.from(hmac.update(req.rawBody, "utf-8").digest(encoding))
                 const actualSignature = Buffer.from(signatureHeader)
                 if (expectedSignature.length !== actualSignature.length || !crypto.timingSafeEqual(expectedSignature, actualSignature)) {
-                    return res.status(statusCode).send(message)
+                    return res.status(statusCode).json({ message })
                 }
 
                 next()
             } catch (err) {
                 console.error("Error during signature verification:", err)
-                res.status(500).send("Error during signature verification")
+                res.status(500).json({ message: "Error during signature verification" })
             }
         })
     }

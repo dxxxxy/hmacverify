@@ -1,10 +1,12 @@
 {
     "name": "hmacverify",
     "type": "module",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "author": "dxxxxy",
     "license": "GPL-3.0",
     "description": "A really simple and lightweight hmac webhook verifier for express.",
+    "main": "index.js",
+    "types": "index.d.ts",
     "homepage": "https://github.com/DxxxxY/hmacverify",
     "keywords": [
         "hmac",

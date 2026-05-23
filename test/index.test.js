@@ -29,7 +29,7 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
 
     test("should reject requests if body stream is already consumed", async () => {
         const req = createMockRequest("", {}, { complete: true })
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, config)
 
@@ -37,7 +37,7 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         await new Promise(resolve => req.on("end", resolve))
 
         expect(res.status).toHaveBeenCalledWith(500)
-        expect(res.send).toHaveBeenCalledWith(expect.stringContaining("Stream already consumed"))
+        expect(res.json).toHaveBeenCalledWith({ message: "Stream already consumed. Ensure hmacverify is used before other body parsers." })
         expect(next).not.toHaveBeenCalled()
     })
 
@@ -45,7 +45,7 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         const req = new EventEmitter()
         req.header = name => req.headers[name.toLowerCase()]
         req.destroy = () => req.emit("close")
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, config)
 
@@ -55,13 +55,13 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         req.emit("data", hugeBuffer)
 
         expect(res.status).toHaveBeenCalledWith(413)
-        expect(res.send).toHaveBeenCalledWith("Payload Too Large")
+        expect(res.json).toHaveBeenCalledWith({ message: "Payload too large" })
         expect(next).not.toHaveBeenCalled()
     })
 
     test("should reject requests with non-json payloads", async () => {
         const req = createMockRequest("invalid json")
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, config)
 
@@ -69,14 +69,14 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         await new Promise(resolve => req.on("end", resolve))
 
         expect(res.status).toHaveBeenCalledWith(400)
-        expect(res.send).toHaveBeenCalledWith("Invalid JSON payload")
+        expect(res.json).toHaveBeenCalledWith({ message: "Invalid JSON payload" })
         expect(next).not.toHaveBeenCalled()
     })
 
     test("should reject requests with missing signature header", async () => {
         const payload = JSON.stringify({ test: 1 })
         const req = createMockRequest(payload)
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, config)
 
@@ -84,14 +84,14 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         await new Promise(resolve => req.on("end", resolve))
 
         expect(res.status).toHaveBeenCalledWith(400)
-        expect(res.send).toHaveBeenCalledWith("Missing signature header")
+        expect(res.json).toHaveBeenCalledWith({ message: "Missing signature header" })
         expect(next).not.toHaveBeenCalled()
     })
 
     test("should reject requests with invalid signature", async () => {
         const payload = JSON.stringify({ test: 1 })
         const req = createMockRequest(payload, { "x-shoppy-signature": "bad-signature" })
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, config)
 
@@ -99,14 +99,14 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         await new Promise(resolve => req.on("end", resolve))
 
         expect(res.status).toHaveBeenCalledWith(config.statusCode)
-        expect(res.send).toHaveBeenCalledWith(config.message)
+        expect(res.json).toHaveBeenCalledWith({ message: config.message })
         expect(next).not.toHaveBeenCalled()
     })
 
     test("should reject requests if an error occurs during signature verification", async () => {
         const payload = JSON.stringify({ test: 1 })
         const req = createMockRequest(payload, { "x-shoppy-signature": signPayload(payload) })
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, { ...config, algorithm: "invalid-algo" })
 
@@ -114,7 +114,7 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         await new Promise(resolve => req.on("end", resolve))
 
         expect(res.status).toHaveBeenCalledWith(500)
-        expect(res.send).toHaveBeenCalledWith("Error during signature verification")
+        expect(res.json).toHaveBeenCalledWith({ message: "Error during signature verification" })
         expect(next).not.toHaveBeenCalled()
     })
 
@@ -122,7 +122,7 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         const data = { event: "completed" }
         const payload = JSON.stringify(data)
         const req = createMockRequest(payload, { "x-shoppy-signature": signPayload(payload) })
-        const res = { status: vi.fn().mockReturnThis(), send: vi.fn() }
+        const res = { status: vi.fn().mockReturnThis(), json: vi.fn() }
         const next = vi.fn()
         const middleware = hmacverify(SECRET, config)
 
@@ -132,7 +132,7 @@ describe("hmacverify - Webhook Signature Middleware for Express.js", () => {
         expect(req.body).toEqual(data)
         expect(req.rawBody).toBe(payload)
         expect(res.status).not.toHaveBeenCalled()
-        expect(res.send).not.toHaveBeenCalled()
+        expect(res.json).not.toHaveBeenCalled()
         expect(next).toHaveBeenCalledOnce()
     })
 })
